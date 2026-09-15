@@ -14,8 +14,8 @@
 <body><div id="root"></div><div id="modalRoot"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
 /* CONFIGURAÇÃO: substitua apenas os valores abaixo. */
-const SUPABASE_URL="COLE_A_URL_DO_SEU_PROJETO_SUPABASE";
-const SUPABASE_ANON_KEY="COLE_A_CHAVE_ANON_PUBLICA_DO_SUPABASE";
+const SUPABASE_URL="https://jcifrmieaoqfnytdfnoz.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_o-vRHdS3VC-40bEGIDIBUw_OtcMy5z-";
 const SOCIAL_LINKS={facebook:"#",instagram:"#",youtube:"#"};
 const isConfigured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_URL.includes("COLE_A_")&&SUPABASE_ANON_KEY&&!SUPABASE_ANON_KEY.includes("COLE_A_");
 const supabaseClient=isConfigured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
