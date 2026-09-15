@@ -14,8 +14,8 @@
 <body><div id="root"></div><div id="modalRoot"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
 /* CONFIGURAÇÃO: substitua apenas os valores abaixo. */
-const SUPABASE_URL="https://jcifrmieaoqfnytdfnoz.supabase.co";
-const SUPABASE_ANON_KEY="sb_publishable_o-vRHdS3VC-40bEGIDIBUw_OtcMy5z-";
+const SUPABASE_URL="COLE_A_URL_DO_SEU_PROJETO_SUPABASE";
+const SUPABASE_ANON_KEY="COLE_A_CHAVE_ANON_PUBLICA_DO_SUPABASE";
 const SOCIAL_LINKS={facebook:"#",instagram:"#",youtube:"#"};
 const isConfigured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_URL.includes("COLE_A_")&&SUPABASE_ANON_KEY&&!SUPABASE_ANON_KEY.includes("COLE_A_");
 const supabaseClient=isConfigured?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
@@ -45,7 +45,90 @@ function registerModal(){modal('Criar conta',`<form id="registerForm"><div class
 function projectModal(){modal('Novo projeto',`<form id="projectForm"><div class="form-grid"><div class="field span-2"><label>Título</label><input class="input" name="titulo" required></div><div class="field span-2"><label>Descrição</label><textarea class="textarea" name="descricao" required></textarea></div><div class="field"><label>Objetivo</label><input class="input" name="objetivo"></div><div class="field"><label>Área</label><select class="select" name="area"><option>Informática</option><option>Marketing</option><option>Administração</option></select></div><div class="field"><label>Visibilidade</label><select class="select" name="tipo_participacao"><option value="aberto">Público</option><option value="fechado">Privado</option></select></div><div class="field"><label>Capa</label><input class="input" type="file" name="capa" accept="image/*"></div><div class="field span-2"><label>Etapas</label><div class="steps">${defaultSteps.map((s,i)=>`<label class="step"><input type="checkbox" name="step" value="${i}"> ${s}</label>`).join('')}</div><small class="muted">O progresso será calculado automaticamente.</small></div><div class="field span-2"><label>Convidar participantes ou professores</label><input class="input" name="inviteSearch" placeholder="Pesquise pelo username após conectar o banco"><div class="people" id="people"></div></div></div><p class="message" id="projectMessage"></p><button class="btn btn-primary full">Criar projeto</button></form>`)}async function createProject(e){e.preventDefault();const f=e.currentTarget,msg=document.getElementById('projectMessage');if(!supabaseClient){msg.textContent='Configure o Supabase e execute o SQL para criar projetos reais.';return}const selected=[...f.querySelectorAll('[name=step]:checked')].map(x=>({titulo:defaultSteps[Number(x.value)],ordem:Number(x.value)+1,concluida:true}));const r=await supabaseClient.from('projects').insert({titulo:f.titulo.value,descricao:f.descricao.value,objetivo:f.objetivo.value,area:f.area.value,tipo_participacao:f.tipo_participacao.value,autora_id:state.user.id,progresso:Math.round(selected.length/defaultSteps.length*100),status:'planejamento'}).select().single();if(r.error){msg.textContent=apiError(r.error);return}if(selected.length)await supabaseClient.from('project_steps').insert(selected.map(x=>({...x,project_id:r.data.id})));closeModal();await boot();showToast('Projeto criado com sucesso.')}
 function newsModal(){modal('Nova notícia',`<form id="newsForm"><div class="field"><label>Título</label><input class="input" name="titulo" required></div><div class="field"><label>Resumo</label><textarea class="textarea" name="resumo" required></textarea></div><div class="field"><label>Conteúdo</label><textarea class="textarea" name="conteudo" required></textarea></div><button class="btn btn-primary full">Salvar rascunho</button></form>`)}async function createNews(e){e.preventDefault();if(!supabaseClient){showToast('Configure o Supabase para criar notícias.');return}const f=e.currentTarget,r=await supabaseClient.from('news').insert({titulo:f.titulo.value,resumo:f.resumo.value,conteudo:f.conteudo.value,autor_id:state.user.id,status:'rascunho'});if(r.error){showToast(apiError(r.error));return}closeModal();showToast('Rascunho salvo.')}
 function suggestionModal(){modal('Nova sugestão',`<form id="suggestionForm"><div class="field"><label>Tipo</label><select class="select" name="tipo"><option>Melhoria visual</option><option>Nova funcionalidade</option><option>Correção</option><option>Outra sugestão</option></select></div><div class="field"><label>Título</label><input class="input" name="titulo" required></div><div class="field"><label>Descrição</label><textarea class="textarea" name="conteudo" required></textarea></div><button class="btn btn-primary full">Enviar sugestão</button></form>`)}
-async function register(e){e.preventDefault();const f=e.currentTarget,msg=document.getElementById('registerMessage');if(!supabaseClient){msg.textContent='Configure o Supabase antes do cadastro.';return}const r=await supabaseClient.auth.signUp({email:f.email.value,password:f.password.value,options:{data:{nome:f.nome.value,username:f.username.value,tipo_solicitado:f.tipo.value,curso:f.tipo.value==='aluno'?f.curso.value:null}}});if(r.error){msg.textContent=apiError(r.error);return}closeModal();showToast('Cadastro criado. Confirme o e-mail.')}
+async function register(e) {
+  e.preventDefault();
+
+  const f = e.currentTarget;
+  const msg = document.getElementById("registerMessage");
+  const button = f.querySelector('button[type="submit"]');
+
+  const nome = f.elements.namedItem("nome")?.value?.trim();
+  const username = f.elements.namedItem("username")?.value?.trim().toLowerCase();
+  const email = f.elements.namedItem("email")?.value?.trim().toLowerCase();
+  const password = f.elements.namedItem("password")?.value;
+  const tipo = f.elements.namedItem("tipo")?.value;
+  const curso = f.elements.namedItem("curso")?.value || null;
+
+  if (!nome) {
+    msg.textContent = "Informe seu nome completo.";
+    return;
+  }
+
+  if (!username || username.length < 3) {
+    msg.textContent = "O username precisa ter pelo menos 3 caracteres.";
+    return;
+  }
+
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    msg.textContent =
+      "O username só pode conter letras, números e sublinhado.";
+    return;
+  }
+
+  if (!email || !email.includes("@")) {
+    msg.textContent = "Informe um e-mail válido.";
+    return;
+  }
+
+  if (!password || password.length < 6) {
+    msg.textContent = "A senha precisa ter pelo menos 6 caracteres.";
+    return;
+  }
+
+  if (tipo === "aluno" && !curso) {
+    msg.textContent = "Escolha seu curso.";
+    return;
+  }
+
+  if (!supabaseClient) {
+    msg.textContent = "Configure o Supabase antes do cadastro.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Criando conta...";
+  msg.textContent = "";
+
+  try {
+    const r = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nome,
+          username,
+          tipo_solicitado: tipo,
+          curso: tipo === "aluno" ? curso : null
+        }
+      }
+    });
+
+    if (r.error) {
+      msg.textContent = apiError(r.error);
+      return;
+    }
+
+    closeModal();
+    showToast("Cadastro criado. Confirme o e-mail.");
+  } catch (error) {
+    console.error("[Tecna cadastro]", error);
+    msg.textContent =
+      error.message || "Não foi possível criar a conta.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Criar conta";
+  }
+}
 async function favorite(type,id){if(!supabaseClient){showToast('Favoritos persistentes dependem do Supabase.');return}const r=await supabaseClient.from('favorites').insert({user_id:state.user.id,project_id:type==='project'?id:null,news_id:type==='news'?id:null});if(r.error&&r.code!=='23505'){showToast(apiError(r));return}showToast('Adicionado aos favoritos.');await loadData();go(state.page)}async function loadData(){if(!supabaseClient)return;const [p,pr,n,f]=await Promise.all([supabaseClient.from('profiles').select('*').eq('id',state.user.id).maybeSingle(),supabaseClient.from('projects').select('*').order('created_at',{ascending:false}),supabaseClient.from('news').select('*').eq('status','publicado').order('created_at',{ascending:false}),supabaseClient.from('favorites').select('*').eq('user_id',state.user.id)]);if(p.data)state.profile=p.data;if(!pr.error)state.projects=pr.data||[];if(!n.error)state.news=n.data||[];if(!f.error)state.favorites=f.data||[]}
 async function boot(){if(!supabaseClient){renderLogin();return}const s=await supabaseClient.auth.getSession();if(!s.data.session){renderLogin();return}state.user=s.data.session.user;await loadData();shell()}
 document.addEventListener('submit',e=>{if(e.target.id==='loginForm')login(e);if(e.target.id==='registerForm')register(e);if(e.target.id==='projectForm')createProject(e);if(e.target.id==='newsForm')createNews(e)});document.addEventListener('click',e=>{const p=e.target.closest('[data-page]'),a=e.target.closest('[data-action]'),o=e.target.closest('[data-oauth]'),fav=e.target.closest('[data-favorite-type]'),n=e.target.closest('[data-news]'),pr=e.target.closest('[data-project]'),v=e.target.closest('[data-vote]'),t=e.target.closest('[data-toggle-password]');if(p){e.preventDefault();go(p.dataset.page)}if(o)oauth(o.dataset.oauth);if(t){const input=t.previousElementSibling;input.type=input.type==='password'?'text':'password'}if(fav){e.stopPropagation();favorite(fav.dataset.favoriteType,fav.dataset.favoriteId)}if(a){const x=a.dataset.action;if(x==='register')registerModal();if(x==='new-project')projectModal();if(x==='new-news')newsModal();if(x==='new-suggestion')suggestionModal();if(x==='menu')document.getElementById('sidebar')?.classList.toggle('open');if(x==='logout'){supabaseClient?.auth.signOut();state.user=null;renderLogin()}if(x==='notifications')showToast('As notificações aparecerão aqui.');if(x==='recommendations')showToast('As recomendações aparecerão aqui.');if(x==='request')showToast('Pedido de participação será enviado quando o banco estiver conectado.');if(x==='edit-profile')showToast('O editor de perfil será aberto pelo módulo de perfil.')}if(v)showToast('Seu voto será salvo quando houver uma votação ativa.');if(n){const x=dataNews().find(y=>String(y.id)===String(n.dataset.news));if(x)modal(esc(x.titulo||x.title),`<p class="kicker">${esc(x.categoria||'Notícia')}</p><p style="line-height:1.7">${esc(x.conteudo||x.resumo||x.summary||'')}</p><div class="modal-actions"><button class="btn btn-secondary" data-action="like">♡ Curtir</button><button class="btn btn-ghost" data-action="comment">💬 Comentar</button><button class="btn btn-ghost" data-favorite-type="news" data-favorite-id="${esc(x.id)}">☆ Favoritar</button></div>`)}if(pr){const x=dataProjects().find(y=>String(y.id)===String(pr.dataset.project));if(x)modal(esc(x.titulo||x.title),`<div class="detail-hero"><h2>${esc(x.titulo||x.title)}</h2></div><p style="line-height:1.7">${esc(x.descricao||x.description||'')}</p><div class="bar"><i style="width:${x.progresso||x.progress||0}%"></i></div><p class="muted">${x.progresso||x.progress||0}% concluído</p><div class="steps">${defaultSteps.map(s=>`<label class="step"><input type="checkbox"> ${s}</label>`).join('')}</div><div class="modal-actions"><button class="btn btn-secondary" data-action="request">Pedir para participar</button><button class="btn btn-ghost" data-favorite-type="project" data-favorite-id="${esc(x.id)}">☆ Favoritar</button><button class="btn btn-ghost" data-action="like">♡ Curtir</button></div><div class="field" style="margin-top:15px"><label>Comentário</label><textarea class="textarea" placeholder="Escreva um comentário"></textarea><button class="btn btn-primary" style="margin-top:8px" data-action="comment">Publicar comentário</button></div>`)} });modalRoot.addEventListener('click',e=>{if(e.target.hasAttribute('data-close-modal'))closeModal()});
